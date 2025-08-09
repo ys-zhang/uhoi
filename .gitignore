@@ -1,0 +1,25 @@
+# Haskell build artifacts
+dist/
+dist-newstyle/
+.vscode/
+.stack-work/
+*.hi
+*.o
+*.dyn_o
+*.dyn_hi
+
+# Cabal files
+cabal.project.local
+cabal.project.local.*
+cabal.sandbox.config
+
+# OSX
+.DS_Store
+
+# Neovim swap/backup files
+*.swp
+*.swo
+*.bak
+
+# temporary files
+*.back
