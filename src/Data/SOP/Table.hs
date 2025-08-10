@@ -7,31 +7,44 @@ import Data.SOP.Constraint (SListIN)
 import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Text qualified as T
-import qualified Data.Text.Lazy as TL
 import Data.Type.AsType
 import Data.Type.Show
 import Lucid
 import Text.Layout.Table
 
-type data Platform = TUI
+type data TUI
+type data LUCID
 
-class ShowCell (plt :: Platform) a where
-  showCell :: Proxy plt -> a -> String
+class Platform plt where
+  type PlatformData plt :: Type
 
-instance {-# OVERLAPS #-} ShowCell plt (K String a) where
-  showCell _ = unK
+instance Platform TUI where
+  type PlatformData TUI = String
 
-instance {-# OVERLAPS #-} ShowCell plt (K Text a) where
-  showCell _ = T.unpack . unK
+instance Platform LUCID where
+  type PlatformData LUCID = Html ()
 
-instance {-# OVERLAPS #-} Show a => ShowCell plt (K a x) where
-  showCell _ = show . unK
 
-instance {-# OVERLAPPABLE #-} Show a => ShowCell plt a where
-  showCell _ = show 
+class ShowCell plt a where
+  showCell :: Proxy plt -> a -> PlatformData plt
+
+instance {-# OVERLAPS #-} IsString (PlatformData plt) => ShowCell plt (K String a) where
+  showCell _ = fromString . unK
+
+instance {-# OVERLAPS #-} IsString (PlatformData plt) => ShowCell plt (K Text a) where
+  showCell _ = fromString . T.unpack . unK
+
+instance {-# OVERLAPS #-} (Show a, IsString (PlatformData plt)) => ShowCell plt (K a x) where
+  showCell _ = fromString . show . unK
+
+instance {-# OVERLAPPABLE #-} (Show a, IsString (PlatformData plt) ) => ShowCell plt a where
+  showCell _ = fromString . show 
 
 showTuiCell :: ShowCell TUI a => a -> String
 showTuiCell = showCell (Proxy @TUI)
+
+renderLucidCell :: ShowCell LUCID a => a -> Html ()
+renderLucidCell = showCell (Proxy @LUCID)
 
 -- =====================================================================
 -- Table Definition
@@ -75,10 +88,17 @@ instance HAp HTable where
 -- | a homogeneous table with a fixed cell type
 type UTable cell cols = HTable (K cell) cols
 
+-- | cast a heterogeneous table to a homogeneous table for render in tui
 toTuiUTable
   :: forall cellF cols . All (Compose (ShowCell TUI) cellF) cols
   => HTable cellF cols -> UTable String cols
 toTuiUTable = hcmap (Proxy @(Compose (ShowCell TUI) cellF)) (K . showTuiCell)
+
+-- | cast a heterogeneous table to a homogeneous table for render in html
+toLucidUTable 
+  :: forall cellF cols . All (Compose (ShowCell LUCID) cellF) cols
+  => HTable cellF cols -> UTable (Html ()) cols
+toLucidUTable = hcmap (Proxy @(Compose (ShowCell LUCID) cellF)) (K . renderLucidCell)
 
 -- =====================================================================
 -- TUI
@@ -87,7 +107,10 @@ toTuiUTable = hcmap (Proxy @(Compose (ShowCell TUI) cellF)) (K . showTuiCell)
 -- | Pretty print a UTable with String cells using table-layout
 prettyHTable
   :: forall cellF cols
-  .  (All Top cols, All Column cols, All (Compose (ShowCell TUI) cellF) cols)
+  .  ( All Top cols
+     , All Column cols
+     , All (Compose (ShowCell TUI) cellF) cols
+     )
   => HTable cellF cols -> String
 prettyHTable =
   prettyUTableWith colSpec headerSpec . toTuiUTable
@@ -116,29 +139,24 @@ prettyUTableWith specs headerSpec tbl = tableString tableSpec
 
 -- | Render a UTable with Text cells to HTML using Lucid
 renderHtmlTable
-  :: forall cols
-  .  (All Top cols, All Column cols)
-  => UTable Text cols
+  :: forall cellF cols
+  .  ( All Top cols
+     , All Column cols
+     , All (Compose (ShowCell LUCID) cellF) cols
+     )
+  => [Attributes]
+  -> HTable cellF cols
   -> Html ()
-renderHtmlTable tbl = 
-  table_ [class_ "table"] $ do
-    thead_ $ tr_ $ mconcat headerCells
-    tbody_ $ mapM_ renderRow tbl.rows
- where
-  cols = hpure Proxy :: NP Proxy cols
-  headerCells :: [Html ()]
-  headerCells = hcollapse $ hcmap (Proxy :: Proxy Column) (K . th_ . toHtml @String . columnName) cols
-  renderRow :: NP (K Text) cols -> Html ()
-  renderRow row = tr_ . mconcat $ (hcollapse $ hmap (K . td_ . toHtml . unK) row :: [Html ()])
+renderHtmlTable as = renderHtmlUTable as . toLucidUTable
 
 -- | Render with custom CSS classes
-renderHtmlTableWith
+renderHtmlUTable
   :: forall cols
   .  (All Top cols, All Column cols)
   => [Attributes]  -- ^ Table attributes (e.g., CSS classes)
-  -> UTable Text cols
+  -> UTable (Html ()) cols
   -> Html ()
-renderHtmlTableWith attrs tbl = 
+renderHtmlUTable attrs tbl = 
   table_ attrs $ do
     thead_ $ tr_ $ mconcat headerCells
     tbody_ $ mapM_ renderRow tbl.rows
@@ -146,13 +164,7 @@ renderHtmlTableWith attrs tbl =
   cols = hpure Proxy :: NP Proxy cols
   headerCells :: [Html ()]
   headerCells = hcollapse $ hcmap (Proxy :: Proxy Column) (K . th_ . toHtml @String . columnName) cols
-  renderRow :: NP (K Text) cols -> Html ()
-  renderRow row = tr_ . mconcat $ (hcollapse $ hmap (K . td_ . toHtml . unK) row :: [Html ()])
+  renderRow :: NP (K (Html ())) cols -> Html ()
+  renderRow row = tr_ . mconcat $ (hcollapse $ hmap (K . td_ . unK) row :: [Html ()])
 
--- | Convert to HTML string
-toHtmlTable
-  :: forall cols
-  .  (All Top cols, All Column cols)
-  => UTable Text cols
-  -> TL.Text
-toHtmlTable = renderText . renderHtmlTable
+

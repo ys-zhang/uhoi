@@ -12,14 +12,13 @@ import Interpreter.UI
 import UHOI.Measure.Unit
 import Meta
 
-
 class MeasureUnit (u :: Unit) where
 
 instance Feature MeasureUnit where
   data (:=) MeasureUnit unit
 
 instance TShow MeasureUnit where
-  type ShowT MeasureUnit = "MeasureUnit"
+  type ShowT MeasureUnit = "Measure Unit"
 
 instance MeasureUnit (u :: Unit) 
 

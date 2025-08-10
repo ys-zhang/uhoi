@@ -30,7 +30,7 @@ import Data.SOP
 import Data.SOP.Table (HTable(..))
 import Data.SOP.Table qualified as Tbl
 import Data.SOP.Utils (Subset(..), SetUnion(..),)
-import Data.String (IsString)
+import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Type.AsType
@@ -50,14 +50,13 @@ import Meta
 --   + there is a default `HasCol` instance for `a :> b` if both `a` and `b` are `HasCol`
 --
 -- Implementation Steps
+-- 
+--      feat := a   <------ HasCell: ColT     = AsType feat
+--      AsType feat <------ HasCol:  CellT    = Text
+--
 --   + implement `HasCell` for type `feat := a` given `feat |- a`
+--   + implement `HasCol` for type `ColT (feat := a)`
 
-{-
-   feat := a  <------ HasCell: ColT     = feat
-   feat       <------ HasCol:  MetaColT = MetaCol feat
-                               CellT    = Text
-   
--}
 
 -- ===========================================================================
 
@@ -68,14 +67,14 @@ deriving newtype instance Eq (CellT a) => Eq (Cell a)
 deriving newtype instance Ord (CellT a) => Ord (Cell a)
 deriving newtype instance IsString (CellT a) => IsString (Cell a) 
 
-instance {-# OVERLAPS #-} CellT (Name n) ~ Text => Tbl.ShowCell plt (Cell (Name (n :: Symbol))) where
-  showCell _ = T.unpack . (.value)
+instance {-# OVERLAPS #-} (CellT (Name n) ~ Text, IsString (Tbl.PlatformData plt)) => Tbl.ShowCell plt (Cell (Name (n :: Symbol))) where
+  showCell _ = fromString . T.unpack . (.value)
 
-instance {-# OVERLAPS #-} CellT (AsType a) ~ Text => Tbl.ShowCell plt (Cell (AsType (a :: k -> Constraint))) where
-  showCell _ = T.unpack . (.value)
+instance {-# OVERLAPS #-} (CellT (AsType a) ~ Text, IsString (Tbl.PlatformData plt)) => Tbl.ShowCell plt (Cell (AsType (a :: k -> Constraint))) where
+  showCell _ = fromString . T.unpack . (.value)
 
-instance {-# OVERLAPS #-} Show (CellT a) => Tbl.ShowCell plt (Cell a) where
-  showCell _ = show . (.value)
+instance {-# OVERLAPS #-} (Show (CellT a), IsString (Tbl.PlatformData plt)) => Tbl.ShowCell plt (Cell a) where
+  showCell _ = fromString . show . (.value)
 
 class HasCol (a :: k) where
   type CellT a :: Type
@@ -107,6 +106,17 @@ instance (HasCol a , HasCol b)
 class HasCol (ColT a) => HasCell a where
   type ColT a :: Type 
   cell :: Proxy a -> CellT (ColT a)
+
+-- | default instance for `feat := a`
+instance {-# OVERLAPPABLE #-} 
+  ( feat |- a
+  , HasCol (AsType feat)
+  , ColT (feat := a) ~ AsType feat
+  , TShow a
+  )
+  => HasCell ((feat :: k -> Constraint) := (a :: k)) where
+    type ColT (feat := a) = AsType feat
+    cell _ = fromString (showT (Proxy @a))
 
 
 -- | HasRow: each concept will implement the HasRow instance

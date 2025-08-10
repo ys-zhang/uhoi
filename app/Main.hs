@@ -1,35 +1,44 @@
 module Main where
 
-import Data.SOP
 import Data.SOP.Table
-import Data.Text (Text, pack)
-import qualified Data.Text.Lazy.IO as TL
-import UHOI (Concepts, conceptsMetaTable)
+import Data.Text.Lazy qualified as TL
+import Lucid
+import UHOI (conceptsMetaTable)
+import Options.Applicative
+import App.WebServer qualified as WS
+
+newtype Options = Options
+  { runServer :: Bool
+  }
+
+optionsParser :: Parser Options
+optionsParser = Options
+  <$> switch
+        ( long "run-server"
+       <> help "Run the web server" )
 
 main :: IO ()
 main = do
-  putStrLn "Hello, Haskell!"
-  putStrLn "TUI Table:"
-  putStrLn s
-  putStrLn "\nHTML Table:"
-  TL.putStrLn $ toHtmlTable textTable
-  putStrLn "\nConcept Meta Table:"
-  putStrLn (prettyHTable conceptsMetaTable)
+  opts <- execParser $ info (optionsParser <**> helper)
+    ( fullDesc
+   <> progDesc "Run the application"
+   <> header "uhoi - a Haskell application" )
+  if runServer opts
+    then WS.app
+    else do
+      putStrLn "\nConcept Meta Table:"
+      putStrLn $ prettyHTable conceptsMetaTable
+      putStrLn "\nConcept Meta Table (HTML):"
+      putStrLn $ prettyPrintHtml conceptsHtmlTable
 
-table :: UTable String ["Name", "Age"]
-table = MkHTable [ K "John" :* K "25" :* Nil
-                 , K "Jane" :* K "30" :* Nil 
-                 ]
+conceptsHtmlTable :: Html ()
+conceptsHtmlTable = renderHtmlTable [] conceptsMetaTable
 
--- Convert to Text table for HTML rendering
-textTable :: UTable Text ["Name", "Age"]
-textTable = MkHTable [ K (pack "John") :* K (pack "25") :* Nil
-                     , K (pack "Jane") :* K (pack "30") :* Nil 
-                     ]
-
-s :: String
-s = prettyHTable table
 
 -- mtable :: UI.MetaTable '[ConceptExample]
 -- mtable = UI.table (Proxy @'[ConceptExample]) (hpure Proxy)
 
+prettyPrintHtml :: Html () -> String
+prettyPrintHtml html = raw_str
+ where
+  raw_str = TL.unpack $ renderText html

@@ -5,6 +5,7 @@ module UHOI (
   module UHOI.Chemical,
   module UHOI.Measure,
   module Meta,
+  mkMetaTable,
   -- * concepts
   Concepts,
   conceptsMetaTable,
@@ -14,18 +15,18 @@ module UHOI (
 
 ) where
 
+import Data.SOP
+import Data.SOP.Utils (Subset)
 import Meta
 import UHOI.Chemical
 import UHOI.Measure
--- import Data.SOP.Table
--- import Data.SOP.Utils
+import Interpreter.UI
 
-import Data.Proxy
-import Interpreter.UI 
 
 type Concepts = 
   '[ ActinLike9
    , ActinLike10
+   , ActinLike11
    , MissingChemical  
    , MissingMeasureUnit
    ]
@@ -42,6 +43,12 @@ type ActinLike10
        , MeasureUnit := Milli Mol :/ Kilo Liter
        ]
 
+type ActinLike11
+  = Concept "Actin-like 11"
+      '[ Chemical    := Protein "Actin-like" 11
+       , MeasureUnit := Milli Mol 
+       ]
+
 type MissingChemical
   = Concept "Missing Chemical"
       '[ MeasureUnit := Milli Mol :/ Liter
@@ -52,10 +59,21 @@ type MissingMeasureUnit
       '[ Chemical := Protein "Missing Chemical" 0
        ]
 
+mkMetaTable :: forall concepts 
+            . ( HasTable concepts
+              , All HasCol (TableT concepts)
+              , Subset (TableT concepts) (TableT concepts)
+              )
+            => Proxy concepts 
+            -> MetaTable concepts
+mkMetaTable p = table p missing
+ where
+  missing = missingValues (Proxy @(TableT concepts))
+
 conceptsMetaTable :: MetaTable Concepts
-conceptsMetaTable = table (Proxy @Concepts) missing
-  where
-    missing = missingValues (Proxy @(TableT Concepts))
+conceptsMetaTable = mkMetaTable (Proxy @Concepts)
+
+
 
 
 -- ==================================================================================================================

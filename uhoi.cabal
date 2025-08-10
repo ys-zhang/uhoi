@@ -111,15 +111,18 @@ executable uhoi
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:    App.WebServer,
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
     build-depends:
-        base ^>=4.21.0.0,
-        uhoi
+        uhoi, base ^>=4.21.0.0,
+        optparse-applicative,
+        servant, servant-server, dani-servant-lucid2,
+        wai, wai-app-static, wai-cors,
+        warp,
 
     -- Directories containing source files.
     hs-source-dirs:   app
