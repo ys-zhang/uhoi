@@ -16,7 +16,15 @@
 	 ```
 5. Run the build:
 	 ```bash
-	 cabal run
+	 cabal run -- -h
 	 ```
 
 # Run instructions
+
+see help of the builds 
+```bash
+# help of the command
+cabal run -- -h
+# help of sub commands
+cabal run -- <SUB-CMD> -h 
+```
