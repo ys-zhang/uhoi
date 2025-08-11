@@ -8,18 +8,22 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+env:
+  BUILD_PATH: "."
+  GITHUB_PAGE_BUILD_DIR: "./_site"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-haskell@v1
+      - uses: haskell-actions/setup@v2
         with:
           ghc-version: "9.12.2"
           cabal-version: "3.14.2.0"
-
       - name: Cache
         uses: actions/cache@v3
         env:
@@ -31,7 +35,6 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
-
       - name: Install dependencies
         run: |
           cabal update
@@ -42,16 +45,23 @@ jobs:
         run: cabal test all
       - name: Generate HTML
         run: |
-          mkdir -p site
-          cabal run uhoi -- gen-html > site/index.html
+          cabal run uhoi -- gen-html -o ${{ env.GITHUB_PAGE_BUILD_DIR }}
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.GITHUB_PAGE_BUILD_DIR }}
+      # - name: Deploy to GitHub Pages
+      #   id: deployment
+      #   uses: actions/deploy-pages@v4
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git fetch origin
-          git checkout --orphan gh-pages
-          git reset --hard
-          cp -r site/* .
-          git add .
-          git commit -m "Deploy to GitHub Pages"
-          git push --force origin gh-pages
+        id: deployment
+        uses: actions/deploy-pages@v4

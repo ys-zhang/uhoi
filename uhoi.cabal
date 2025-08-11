@@ -55,7 +55,9 @@ common warnings
 
 common lang-ext
     -- LANGUAGE extensions used by modules in this package.
-    default-extensions: OverloadedStrings, DeriveGeneric, DeriveAnyClass,
+    default-extensions: OverloadedStrings, 
+                        LambdaCase, MultiWayIf, BlockArguments,
+                        DeriveGeneric, DeriveAnyClass,
                         DataKinds, TypeFamilies, TypeData, 
                         DuplicateRecordFields, NoFieldSelectors, OverloadedRecordDot,
 
@@ -105,7 +107,7 @@ library
 
 executable uhoi
     -- Import common warning flags.
-    import:           warnings, deps
+    import:           warnings, deps, lang-ext
 
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs
@@ -118,7 +120,9 @@ executable uhoi
 
     -- Other library packages from which modules are imported.
     build-depends:
-        uhoi, base ^>=4.21.0.0,
+        uhoi, 
+        base ^>=4.21.0.0,
+        directory, filepath,
         optparse-applicative,
         servant, servant-server, dani-servant-lucid2,
         wai, wai-app-static, wai-cors,
