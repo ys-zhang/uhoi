@@ -1,0 +1,22 @@
+
+# Build Instructions
+
+1. Install `ghcup`
+2. Install the required GHC version:
+	 ```bash
+	 ghcup install ghc 9.12.2
+	 ```
+3. Install the required Cabal version:
+	 ```bash
+	 ghcup install cabal 3.14.2.0
+	 ```
+4. Build the project:
+	 ```bash
+	 cabal build
+	 ```
+5. Run the build:
+	 ```bash
+	 cabal run
+	 ```
+
+# Run instructions
