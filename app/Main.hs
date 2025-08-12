@@ -68,7 +68,6 @@ main = do
     putStrLn "\nConcept Meta Table:"
     putStrLn $ prettyHTable conceptsMetaTable
   runCmd (GenHtml opts) = do
-    putStrLn "Generating HTML...\n"
     case opts.outputPath of 
       Nothing -> do 
         putStrLn 

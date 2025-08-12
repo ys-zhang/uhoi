@@ -11,6 +11,7 @@ module App.WebServer (
 ) where
 
 import Control.Monad (void)
+import Data.Function ((&))
 import Data.Maybe (fromJust)
 import Data.Map (Map)
 import Data.Map qualified as Map
@@ -53,9 +54,10 @@ api = Proxy
 app :: Options -> IO ()
 app opts = do 
   putStrLn $ "Starting web server on " ++ opts.host ++ ":" ++ show opts.port ++ "..."
-  let settings = setHost (fromString opts.host) 
-               $ setPort opts.port 
-               $ defaultSettings
+  let settings = defaultSettings
+               & setHost (fromString opts.host) 
+               & setPort opts.port 
+                 
   runSettings settings . logRequests $ serve api handler
 
 logRequests :: Middleware
@@ -70,11 +72,19 @@ handler = pure (getStaticPage' "meta-table") :<|> pure hello_world
   hello_world = html_ $ do 
     h1_ "Hello, World!"
     p_ $ do 
-      "Jump to the " <> a_ [href_ "/meta"] "meta table"
+      "Jump to the " <> a_ [href_ "./meta"] "meta table"
 
 staticPages :: Map FilePath (Html ())
 staticPages = 
-  [ ( "index",  getStaticPage' "meta-table")
+  [ ( "index"
+    , html_ do 
+        void . head_ $ title_ "Type Level UHOI"
+        body_ $ do
+          h1_ "Type Level UHOI"
+          ol_ $ do
+            li_ $ a_ [href_ "./meta-table"] "Concepts Meta Table"
+            li_ $ a_ [href_ "./haddocks"] "Documents"
+    ) 
   , ( "meta-table"
     , html_ $ do   
         void . head_ $ title_ "Concepts Meta Table"

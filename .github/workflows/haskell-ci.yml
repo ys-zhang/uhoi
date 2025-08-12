@@ -46,6 +46,7 @@ jobs:
       - name: Generate HTML
         run: |
           cabal run uhoi -- gen-html -o ${{ env.GITHUB_PAGE_BUILD_DIR }}
+          cabal haddock-project --hackage --output=${{ env.GITHUB_PAGE_BUILD_DIR }}/haddocks
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
