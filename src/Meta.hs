@@ -7,7 +7,6 @@ import Data.Type.Show
 import GHC.TypeLits
 
 data (path :: k1) :> (a :: k2)
-data Doc (str :: Symbol) (a :: k)
 
 data Concept (name :: Symbol) (fs :: [Type])
 

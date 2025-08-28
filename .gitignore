@@ -24,3 +24,8 @@ cabal.sandbox.config
 
 # temporary files
 *.back
+
+# Misc builds
+build-pdf/
+result/
+

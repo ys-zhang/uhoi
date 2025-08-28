@@ -1,4 +1,4 @@
-cabal-version:      3.14
+cabal-version:      3.8
 -- The cabal-version field refers to the version of the .cabal specification,
 -- and can be different from the cabal-install (the tool) version and the
 -- Cabal (the library) version you are using. As such, the Cabal (the library)
@@ -79,6 +79,7 @@ library
     exposed-modules:  Meta, 
                       UHOI, 
                       UHOI.Chemical,
+                      UHOI.Doc,
                       UHOI.Measure,
                       UHOI.Measure.Unit,
                       TypeLevel.Field, 
@@ -133,6 +134,36 @@ executable uhoi
 
     -- Base language which the package is written in.
     default-language: GHC2024
+
+executable paper
+    -- Import common warning flags.
+    import:           warnings, deps, lang-ext
+
+    -- .hs or .lhs file containing the Main module.
+    main-is:          Main.lhs
+
+    -- Modules included in this executable, other than Main.
+    -- other-modules:    App.WebServer,
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+
+    -- Other library packages from which modules are imported.
+    build-depends:
+        uhoi, 
+        base ^>=4.21.0.0,
+        -- directory, filepath,
+        -- optparse-applicative,
+        -- servant, servant-server, dani-servant-lucid2,
+        -- wai, wai-app-static, wai-cors,
+        -- warp,
+
+    -- Directories containing source files.
+    hs-source-dirs:   paper
+
+    -- Base language which the package is written in.
+    default-language: GHC2024
+
 
 test-suite uhoi-test
     -- Import common warning flags.
